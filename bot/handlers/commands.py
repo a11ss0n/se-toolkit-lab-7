@@ -215,17 +215,17 @@ async def handle_scores(ctx: HandlerContext, args: str = "") -> str:
                 )
 
         # Format pass rates
-        # Expected format: [{"task": "Task Name", "pass_rate": 0.714, "attempts": 156}, ...]
+        # Backend returns: [{"task": "Task Name", "avg_score": 59.9, "attempts": 753}, ...]
         lines = [f"📊 Pass rates for {lab_name}:\n"]
 
         for rate in pass_rates:
             task_name = rate.get("task", rate.get("task_name", "Unknown Task"))
-            pass_rate = rate.get("pass_rate", rate.get("rate", 0))
+            # Backend returns avg_score as percentage (0-100), not rate (0-1)
+            avg_score = rate.get("avg_score", rate.get("pass_rate", rate.get("rate", 0)))
             attempts = rate.get("attempts", rate.get("count", 0))
 
-            # Convert to percentage
-            percentage = pass_rate * 100 if pass_rate <= 1 else pass_rate
-            lines.append(f"- {task_name}: {percentage:.1f}% ({attempts} attempts)")
+            # avg_score is already a percentage
+            lines.append(f"- {task_name}: {avg_score:.1f}% ({attempts} attempts)")
 
         return "\n".join(lines)
 
