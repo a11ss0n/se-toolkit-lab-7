@@ -36,14 +36,14 @@ async def handle_start(ctx: HandlerContext, args: str = "") -> str:
         Welcome message text
     """
     return (
-        "👋 Добро пожаловать в LMS Bot!\n\n"
-        "Я помогу вам взаимодействовать с системой управления обучением.\n\n"
-        "📚 Доступные команды:\n"
-        "  /help - показать справку\n"
-        "  /health - проверить статус системы\n"
-        "  /labs - показать список лабораторных работ\n"
-        "  /scores <lab> - показать результаты по лабораторной\n\n"
-        "Вы также можете писать мне обычным языком - я постараюсь понять ваш запрос!"
+        "Welcome to LMS Bot!\n\n"
+        "I will help you interact with the learning management system.\n\n"
+        "Available commands:\n"
+        "  /help - show help\n"
+        "  /health - check system status\n"
+        "  /labs - show list of labs\n"
+        "  /scores <lab> - show lab results\n\n"
+        "You can also write to me in natural language!"
     )
 
 
@@ -58,19 +58,18 @@ async def handle_help(ctx: HandlerContext, args: str = "") -> str:
         Help message text
     """
     return (
-        "📖 Справка по боту\n\n"
-        "🔹 Slash-команды:\n"
-        "  /start - приветственное сообщение\n"
-        "  /help - эта справка\n"
-        "  /health - статус backend-системы\n"
-        "  /labs - список лабораторных работ\n"
-        "  /scores <lab> - результаты по лабораторной\n\n"
-        "🔹 Естественный язык:\n"
-        "Просто напишите, что вам нужно, например:\n"
-        "  • 'покажи мои лабораторные'\n"
-        "  • 'как сдать проект?'\n"
-        "  • 'какой дедлайн по лабе 3?'\n\n"
-        "Бот использует AI для понимания ваших запросов."
+        "LMS Bot Help\n\n"
+        "Slash commands:\n"
+        "  /start - welcome message\n"
+        "  /help - this help\n"
+        "  /health - backend status\n"
+        "  /labs - list of labs\n"
+        "  /scores <lab> - lab results\n\n"
+        "Natural language:\n"
+        "Just write what you need, for example:\n"
+        "  - 'show my labs'\n"
+        "  - 'how to submit project?'\n"
+        "  - 'deadline for lab 3?'"
     )
 
 
@@ -88,9 +87,9 @@ async def handle_health(ctx: HandlerContext, args: str = "") -> str:
     try:
         is_healthy, status_message, error = await client.health_check()
         if is_healthy:
-            return status_message or "✅ Backend is healthy."
+            return status_message or "Backend is healthy."
         else:
-            return error.message if error else "❌ Backend is not responding."
+            return error.message if error else "Backend is not responding."
     finally:
         await client.close()
 
@@ -112,7 +111,7 @@ async def handle_labs(ctx: HandlerContext, args: str = "") -> str:
             return error.message
 
         if not items:
-            return "📚 Список лабораторных работ пуст.\n\nПопробуйте позже или обратитесь к администратору."
+            return "List of labs is empty.\n\nTry again later or contact administrator."
 
         # Filter only items with type "lab"
         labs = []
@@ -127,10 +126,10 @@ async def handle_labs(ctx: HandlerContext, args: str = "") -> str:
                 })
 
         if not labs:
-            return "📚 Лабораторные работы не найдены."
+            return "No labs found."
 
         # Format output
-        lines = ["📚 Доступные лаборатории:\n"]
+        lines = ["Available labs:\n"]
         for lab in labs:
             name = lab["name"]
             lines.append(f"- {name}")
@@ -153,12 +152,12 @@ async def handle_scores(ctx: HandlerContext, args: str = "") -> str:
     """
     if not args:
         return (
-            "📊 Результаты по лабораторным работам\n\n"
-            "Использование: /scores <lab-name>\n\n"
-            "Примеры:\n"
+            "Lab results\n\n"
+            "Usage: /scores <lab-name>\n\n"
+            "Examples:\n"
             "  /scores lab-01\n"
             "  /scores lab-04\n\n"
-            "Доступные лабораторные:\n"
+            "Available labs:\n"
             "  lab-01, lab-02, lab-03, lab-04, lab-05, lab-06"
         )
 
@@ -204,19 +203,19 @@ async def handle_scores(ctx: HandlerContext, args: str = "") -> str:
 
             if lab_exists:
                 return (
-                    f"📊 Pass rates for {lab_name}:\n\n"
-                    f"Нет данных о submission.\n"
-                    f"Студенты ещё не сдали эту лабораторную работу."
+                    f"Pass rates for {lab_name}:\n\n"
+                    f"No submission data yet.\n"
+                    f"Students have not submitted this lab."
                 )
             else:
                 return (
-                    f"📊 Лабораторная работа \"{lab_name}\" не найдена.\n\n"
-                    f"Проверьте название или используйте /labs для просмотра доступных."
+                    f"Lab \"{lab_name}\" not found.\n\n"
+                    f"Check the lab name or use /labs to see available labs."
                 )
 
         # Format pass rates
         # Backend returns: [{"task": "Task Name", "avg_score": 59.9, "attempts": 753}, ...]
-        lines = [f"📊 Pass rates for {lab_name}:\n"]
+        lines = [f"Pass rates for {lab_name}:\n"]
 
         for rate in pass_rates:
             task_name = rate.get("task", rate.get("task_name", "Unknown Task"))

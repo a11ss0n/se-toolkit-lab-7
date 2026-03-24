@@ -81,11 +81,11 @@ async def run_test_mode(command: str) -> int:
     
     if handler is None:
         # Unknown command - print helpful message and exit with code 0
-        print(f"❓ Неизвестная команда: '{cmd}'\n")
-        print("Доступные команды:")
+        print(f"Unknown command: '{cmd}'\n")
+        print("Available commands:")
         for name in sorted(COMMAND_HANDLERS.keys()):
             print(f"  /{name}")
-        print("\nПопробуйте /help для получения справки.")
+        print("\nTry /help for more information.")
         return 0
 
     # Run handler
