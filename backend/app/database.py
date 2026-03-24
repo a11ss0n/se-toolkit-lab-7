@@ -21,3 +21,9 @@ engine = create_async_engine(get_database_url())
 async def get_session() -> AsyncGenerator[AsyncSession]:
     async with AsyncSession(engine) as session:
         yield session
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession]:
+    """Get an async session for use in startup events."""
+    async with AsyncSession(engine) as session:
+        yield session
