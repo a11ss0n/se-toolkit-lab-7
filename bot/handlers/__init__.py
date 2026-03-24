@@ -1,12 +1,13 @@
 """Handlers package."""
 
 from bot.handlers.commands import (
+    COMMAND_HANDLERS,
     handle_help,
     handle_health,
     handle_labs,
+    handle_scores,
     handle_start,
 )
-from bot.handlers.scores import handle_scores
 
 __all__ = [
     "handle_start",
@@ -14,4 +15,5 @@ __all__ = [
     "handle_health",
     "handle_labs",
     "handle_scores",
+    "COMMAND_HANDLERS",
 ]

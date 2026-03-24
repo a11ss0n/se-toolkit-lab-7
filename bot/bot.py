@@ -39,6 +39,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Suppress httpx INFO logs (they clutter test output)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 def create_handler_context() -> HandlerContext:
     """Create handler context from settings."""
