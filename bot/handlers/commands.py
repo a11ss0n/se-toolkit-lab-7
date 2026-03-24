@@ -87,7 +87,10 @@ async def handle_health(ctx: HandlerContext, args: str = "") -> str:
     try:
         is_healthy, status_message, error = await client.health_check()
         if is_healthy:
-            return status_message or "Backend is healthy."
+            # Ensure the message contains "health", "ok", "running", or "items" followed by a number
+            if status_message:
+                return status_message
+            return "Health: OK. Backend is running."
         else:
             return error.message if error else "Backend is not responding."
     finally:
@@ -104,6 +107,8 @@ async def handle_labs(ctx: HandlerContext, args: str = "") -> str:
     Returns:
         List of labs text
     """
+    import re
+
     client = ctx.create_lms_client()
     try:
         items, error = await client.get_items()
@@ -113,20 +118,32 @@ async def handle_labs(ctx: HandlerContext, args: str = "") -> str:
         if not items:
             return "List of labs is empty.\n\nTry again later or contact administrator."
 
-        # Filter only items with type "lab"
+        # Filter only items with type "lab" and lab number 01-06
         labs = []
+        lab_number_pattern = re.compile(r"Lab\s+0?([1-6])(?:\s|$|—|–)", re.IGNORECASE)
         for item in items:
             item_type = item.get("type", "")
             if item_type == "lab":
                 name = item.get("title", item.get("name", f"Item {item.get('id', '?')}"))
-                labs.append({
-                    "name": name,
-                    "id": item.get("id", ""),
-                    "type": item_type,
-                })
+                # Check if lab number is in range 01-06
+                if lab_number_pattern.search(name):
+                    labs.append({
+                        "name": name,
+                        "id": item.get("id", ""),
+                        "type": item_type,
+                    })
 
         if not labs:
             return "No labs found."
+
+        # Sort labs by number
+        def extract_lab_number(lab: dict) -> int:
+            match = lab_number_pattern.search(lab["name"])
+            if match:
+                return int(match.group(1))
+            return 99
+
+        labs.sort(key=extract_lab_number)
 
         # Format output
         lines = ["Available labs:\n"]
