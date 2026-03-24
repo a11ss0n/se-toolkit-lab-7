@@ -30,7 +30,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
 from bot.config import settings
-from bot.handlers import handle_help, handle_health, handle_labs, handle_start
+from bot.handlers import handle_help, handle_health, handle_labs, handle_scores, handle_start
 from bot.handlers.commands import COMMAND_HANDLERS, HandlerContext
 
 logging.basicConfig(
@@ -74,13 +74,18 @@ async def run_test_mode(command: str) -> int:
 
     # Find handler
     handler = COMMAND_HANDLERS.get(cmd)
+    ctx = create_handler_context()
+    
     if handler is None:
-        print(f"Error: Unknown command '{cmd}'", file=sys.stderr)
-        print(f"Available commands: {', '.join(COMMAND_HANDLERS.keys())}", file=sys.stderr)
-        return 1
+        # Unknown command - print helpful message and exit with code 0
+        print(f"❓ Неизвестная команда: '{cmd}'\n")
+        print("Доступные команды:")
+        for name in sorted(COMMAND_HANDLERS.keys()):
+            print(f"  /{name}")
+        print("\nПопробуйте /help для получения справки.")
+        return 0
 
     # Run handler
-    ctx = create_handler_context()
     try:
         result = await handler(ctx, args)
         print(result)
@@ -126,6 +131,14 @@ async def run_telegram_bot() -> None:
         result = await handle_labs(ctx)
         await message.answer(result)
 
+    @dp.message(Command("scores"))
+    async def cmd_scores(message: Message) -> None:
+        """Handle /scores command."""
+        # Extract lab argument from command
+        args = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""
+        result = await handle_scores(ctx, args)
+        await message.answer(result)
+
     @dp.message()
     async def handle_message(message: Message) -> None:
         """Handle natural language messages via LLM intent routing.
@@ -138,7 +151,7 @@ async def run_telegram_bot() -> None:
         await message.answer(
             "Я пока учусь понимать естественный язык. 🤔\n\n"
             "Попробуйте использовать команды:\n"
-            "/start, /help, /health, /labs"
+            "/start, /help, /health, /labs, /scores"
         )
 
     logger.info("Starting bot...")

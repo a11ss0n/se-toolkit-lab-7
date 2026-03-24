@@ -35,7 +35,8 @@ async def handle_start(ctx: HandlerContext, args: str = "") -> str:
         "📚 Доступные команды:\n"
         "  /help - показать справку\n"
         "  /health - проверить статус системы\n"
-        "  /labs - показать список лабораторных работ\n\n"
+        "  /labs - показать список лабораторных работ\n"
+        "  /scores <lab> - показать результаты по лабораторной\n\n"
         "Вы также можете писать мне обычным языком - я постараюсь понять ваш запрос!"
     )
 
@@ -56,7 +57,8 @@ async def handle_help(ctx: HandlerContext, args: str = "") -> str:
         "  /start - приветственное сообщение\n"
         "  /help - эта справка\n"
         "  /health - статус backend-системы\n"
-        "  /labs - список лабораторных работ\n\n"
+        "  /labs - список лабораторных работ\n"
+        "  /scores <lab> - результаты по лабораторной\n\n"
         "🔹 Естественный язык:\n"
         "Просто напишите, что вам нужно, например:\n"
         "  • 'покажи мои лабораторные'\n"
@@ -120,10 +122,14 @@ async def handle_labs(ctx: HandlerContext, args: str = "") -> str:
     )
 
 
+# Import scores handler
+from bot.handlers.scores import handle_scores
+
 # Map command names to handler functions
 COMMAND_HANDLERS = {
     "start": handle_start,
     "help": handle_help,
     "health": handle_health,
     "labs": handle_labs,
+    "scores": handle_scores,
 }
