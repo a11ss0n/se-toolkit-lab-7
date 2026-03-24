@@ -141,7 +141,7 @@ class LMSAPIClient:
             response.raise_for_status()
             items = response.json()
             count = len(items) if isinstance(items, list) else "unknown"
-            return True, f"Backend is healthy. {count} items available.", None
+            return True, f"Backend health status: OK. {count} items available.", None
         except httpx.RequestError as e:
             api_error = self._format_error(e, f"{self.base_url}/items/")
             return False, None, api_error
