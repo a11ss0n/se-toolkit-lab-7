@@ -248,3 +248,223 @@ class LMSAPIClient:
                 details=str(e),
             )
             return [], api_error
+
+    async def get_scores(self, lab: str) -> tuple[list[dict], ApiError | None]:
+        """Get score distribution (4 buckets) for a lab.
+
+        Args:
+            lab: Lab identifier
+
+        Returns:
+            Tuple of (scores, error)
+            - scores: List of score distribution data
+            - error: ApiError if request failed, None otherwise
+        """
+        try:
+            client = await self._get_client()
+            response = await client.get("/analytics/scores", params={"lab": lab})
+            response.raise_for_status()
+            return response.json(), None
+        except httpx.RequestError as e:
+            api_error = self._format_error(e, f"{self.base_url}/analytics/scores?lab={lab}")
+            return [], api_error
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return [], None
+            api_error = self._format_error(e, f"{self.base_url}/analytics/scores?lab={lab}")
+            return [], api_error
+        except Exception as e:
+            api_error = ApiError(
+                message=f"Backend error: unexpected error. {e}",
+                details=str(e),
+            )
+            return [], api_error
+
+    async def get_timeline(self, lab: str) -> tuple[list[dict], ApiError | None]:
+        """Get submission timeline (submissions per day) for a lab.
+
+        Args:
+            lab: Lab identifier
+
+        Returns:
+            Tuple of (timeline, error)
+            - timeline: List of timeline data points
+            - error: ApiError if request failed, None otherwise
+        """
+        try:
+            client = await self._get_client()
+            response = await client.get("/analytics/timeline", params={"lab": lab})
+            response.raise_for_status()
+            return response.json(), None
+        except httpx.RequestError as e:
+            api_error = self._format_error(e, f"{self.base_url}/analytics/timeline?lab={lab}")
+            return [], api_error
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return [], None
+            api_error = self._format_error(e, f"{self.base_url}/analytics/timeline?lab={lab}")
+            return [], api_error
+        except Exception as e:
+            api_error = ApiError(
+                message=f"Backend error: unexpected error. {e}",
+                details=str(e),
+            )
+            return [], api_error
+
+    async def get_groups(self, lab: str) -> tuple[list[dict], ApiError | None]:
+        """Get per-group scores and student counts for a lab.
+
+        Args:
+            lab: Lab identifier
+
+        Returns:
+            Tuple of (groups, error)
+            - groups: List of group data
+            - error: ApiError if request failed, None otherwise
+        """
+        try:
+            client = await self._get_client()
+            response = await client.get("/analytics/groups", params={"lab": lab})
+            response.raise_for_status()
+            return response.json(), None
+        except httpx.RequestError as e:
+            api_error = self._format_error(e, f"{self.base_url}/analytics/groups?lab={lab}")
+            return [], api_error
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return [], None
+            api_error = self._format_error(e, f"{self.base_url}/analytics/groups?lab={lab}")
+            return [], api_error
+        except Exception as e:
+            api_error = ApiError(
+                message=f"Backend error: unexpected error. {e}",
+                details=str(e),
+            )
+            return [], api_error
+
+    async def get_top_learners(
+        self, lab: str, limit: int = 10
+    ) -> tuple[list[dict], ApiError | None]:
+        """Get top N learners by score for a lab.
+
+        Args:
+            lab: Lab identifier
+            limit: Number of top learners to return (default: 10)
+
+        Returns:
+            Tuple of (learners, error)
+            - learners: List of top learner data
+            - error: ApiError if request failed, None otherwise
+        """
+        try:
+            client = await self._get_client()
+            response = await client.get(
+                "/analytics/top-learners", params={"lab": lab, "limit": limit}
+            )
+            response.raise_for_status()
+            return response.json(), None
+        except httpx.RequestError as e:
+            api_error = self._format_error(
+                e, f"{self.base_url}/analytics/top-learners?lab={lab}&limit={limit}"
+            )
+            return [], api_error
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return [], None
+            api_error = self._format_error(
+                e, f"{self.base_url}/analytics/top-learners?lab={lab}&limit={limit}"
+            )
+            return [], api_error
+        except Exception as e:
+            api_error = ApiError(
+                message=f"Backend error: unexpected error. {e}",
+                details=str(e),
+            )
+            return [], api_error
+
+    async def get_completion_rate(self, lab: str) -> tuple[dict | None, ApiError | None]:
+        """Get completion rate percentage for a lab.
+
+        Args:
+            lab: Lab identifier
+
+        Returns:
+            Tuple of (rate_data, error)
+            - rate_data: Dict with completion rate percentage
+            - error: ApiError if request failed, None otherwise
+        """
+        try:
+            client = await self._get_client()
+            response = await client.get("/analytics/completion-rate", params={"lab": lab})
+            response.raise_for_status()
+            return response.json(), None
+        except httpx.RequestError as e:
+            api_error = self._format_error(
+                e, f"{self.base_url}/analytics/completion-rate?lab={lab}"
+            )
+            return None, api_error
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return None, None
+            api_error = self._format_error(
+                e, f"{self.base_url}/analytics/completion-rate?lab={lab}"
+            )
+            return None, api_error
+        except Exception as e:
+            api_error = ApiError(
+                message=f"Backend error: unexpected error. {e}",
+                details=str(e),
+            )
+            return None, api_error
+
+    async def get_learners(self) -> tuple[list[dict], ApiError | None]:
+        """Get enrolled students and groups.
+
+        Returns:
+            Tuple of (learners, error)
+            - learners: List of learner data
+            - error: ApiError if request failed, None otherwise
+        """
+        try:
+            client = await self._get_client()
+            response = await client.get("/learners/")
+            response.raise_for_status()
+            return response.json(), None
+        except httpx.RequestError as e:
+            api_error = self._format_error(e, f"{self.base_url}/learners/")
+            return [], api_error
+        except httpx.HTTPStatusError as e:
+            api_error = self._format_error(e, f"{self.base_url}/learners/")
+            return [], api_error
+        except Exception as e:
+            api_error = ApiError(
+                message=f"Backend error: unexpected error. {e}",
+                details=str(e),
+            )
+            return [], api_error
+
+    async def trigger_sync(self) -> tuple[dict | None, ApiError | None]:
+        """Trigger data sync from autochecker.
+
+        Returns:
+            Tuple of (result, error)
+            - result: Dict with sync result
+            - error: ApiError if request failed, None otherwise
+        """
+        try:
+            client = await self._get_client()
+            response = await client.post("/pipeline/sync")
+            response.raise_for_status()
+            return response.json(), None
+        except httpx.RequestError as e:
+            api_error = self._format_error(e, f"{self.base_url}/pipeline/sync")
+            return None, api_error
+        except httpx.HTTPStatusError as e:
+            api_error = self._format_error(e, f"{self.base_url}/pipeline/sync")
+            return None, api_error
+        except Exception as e:
+            api_error = ApiError(
+                message=f"Backend error: unexpected error. {e}",
+                details=str(e),
+            )
+            return None, api_error
