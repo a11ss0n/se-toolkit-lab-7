@@ -253,7 +253,9 @@ After receiving tool results, analyze them and provide a helpful answer.
             "tool_choice": "auto",
         }
         
+        print(f"[llm] Calling {self.base_url} with model {self.model}", file=sys.stderr)
         response = await client.post("/chat/completions", json=payload)
+        print(f"[llm] Response status: {response.status_code}", file=sys.stderr)
         response.raise_for_status()
         return response.json()
 
