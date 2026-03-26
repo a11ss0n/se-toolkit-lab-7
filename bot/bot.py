@@ -27,10 +27,20 @@ if str(_script_dir.parent) not in sys.path:
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.config import settings
-from bot.handlers import handle_help, handle_health, handle_labs, handle_scores, handle_start
+from bot.handlers import (
+    handle_groups,
+    handle_help,
+    handle_health,
+    handle_labs,
+    handle_natural_language,
+    handle_scores,
+    handle_start,
+    handle_top_learners,
+)
 from bot.handlers.commands import COMMAND_HANDLERS, HandlerContext
 
 logging.basicConfig(
@@ -41,6 +51,33 @@ logger = logging.getLogger(__name__)
 
 # Suppress httpx INFO logs (they clutter test output)
 logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
+def get_main_keyboard() -> InlineKeyboardMarkup:
+    """Create main inline keyboard with common actions."""
+    builder = InlineKeyboardBuilder()
+    
+    # Row 1: Labs and Scores
+    builder.button(text="📋 Labs", callback_data="labs")
+    builder.button(text="📊 Scores lab-04", callback_data="scores_lab-04")
+    
+    # Row 2: Top learners and Groups
+    builder.button(text="🏆 Top 5 students", callback_data="top5_lab-04")
+    builder.button(text="👥 Groups lab-03", callback_data="groups_lab-03")
+    
+    # Row 3: Help and Health
+    builder.button(text="❓ Help", callback_data="help")
+    builder.button(text="💚 Health", callback_data="health")
+    
+    builder.adjust(2, 2, 2)  # 2 buttons per row
+    return builder.as_markup()
+
+
+def get_back_keyboard() -> InlineKeyboardMarkup:
+    """Create keyboard with back button."""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🔙 Back to menu", callback_data="back")
+    return builder.as_markup()
 
 
 def create_handler_context() -> HandlerContext:
@@ -58,7 +95,7 @@ async def run_test_mode(command: str) -> int:
     """Run a command in test mode and print the result.
 
     Args:
-        command: Command string like "/start" or "/labs arg1 arg2"
+        command: Command string like "/start" or "/labs arg1 arg2" or plain text
 
     Returns:
         Exit code (0 for success, 1 for error)
@@ -69,33 +106,43 @@ async def run_test_mode(command: str) -> int:
         print("Error: Empty command", file=sys.stderr)
         return 1
 
+    ctx = create_handler_context()
     cmd = parts[0]
+
+    # Check if it's a slash command
     if cmd.startswith("/"):
         cmd = cmd[1:]
+        args = " ".join(parts[1:]) if len(parts) > 1 else ""
 
-    args = " ".join(parts[1:]) if len(parts) > 1 else ""
+        # Find handler
+        handler = COMMAND_HANDLERS.get(cmd)
 
-    # Find handler
-    handler = COMMAND_HANDLERS.get(cmd)
-    ctx = create_handler_context()
-    
-    if handler is None:
-        # Unknown command - print helpful message and exit with code 0
-        print(f"Unknown command: '{cmd}'\n")
-        print("Available commands:")
-        for name in sorted(COMMAND_HANDLERS.keys()):
-            print(f"  /{name}")
-        print("\nTry /help for more information.")
-        return 0
+        if handler is None:
+            # Unknown command - print helpful message and exit with code 0
+            print(f"Unknown command: '{cmd}'\n")
+            print("Available commands:")
+            for name in sorted(COMMAND_HANDLERS.keys()):
+                print(f"  /{name}")
+            print("\nTry /help for more information.")
+            return 0
 
-    # Run handler
-    try:
-        result = await handler(ctx, args)
-        print(result)
-        return 0
-    except Exception as e:
-        print(f"Error executing command: {e}", file=sys.stderr)
-        return 1
+        # Run handler
+        try:
+            result = await handler(ctx, args)
+            print(result)
+            return 0
+        except Exception as e:
+            print(f"Error executing command: {e}", file=sys.stderr)
+            return 1
+    else:
+        # Natural language message - use intent router
+        try:
+            result = await handle_natural_language(ctx, command)
+            print(result)
+            return 0
+        except Exception as e:
+            print(f"Error processing message: {e}", file=sys.stderr)
+            return 1
 
 
 async def run_telegram_bot() -> None:
@@ -114,25 +161,25 @@ async def run_telegram_bot() -> None:
     async def cmd_start(message: Message) -> None:
         """Handle /start command."""
         result = await handle_start(ctx)
-        await message.answer(result)
+        await message.answer(result, reply_markup=get_main_keyboard())
 
     @dp.message(Command("help"))
     async def cmd_help(message: Message) -> None:
         """Handle /help command."""
         result = await handle_help(ctx)
-        await message.answer(result)
+        await message.answer(result, reply_markup=get_back_keyboard())
 
     @dp.message(Command("health"))
     async def cmd_health(message: Message) -> None:
         """Handle /health command."""
         result = await handle_health(ctx)
-        await message.answer(result)
+        await message.answer(result, reply_markup=get_back_keyboard())
 
     @dp.message(Command("labs"))
     async def cmd_labs(message: Message) -> None:
         """Handle /labs command."""
         result = await handle_labs(ctx)
-        await message.answer(result)
+        await message.answer(result, reply_markup=get_back_keyboard())
 
     @dp.message(Command("scores"))
     async def cmd_scores(message: Message) -> None:
@@ -140,22 +187,74 @@ async def run_telegram_bot() -> None:
         # Extract lab argument from command
         args = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""
         result = await handle_scores(ctx, args)
-        await message.answer(result)
+        await message.answer(result, reply_markup=get_back_keyboard())
+
+    @dp.callback_query(lambda c: c.data == "labs")
+    async def callback_labs(callback_query: types.CallbackQuery) -> None:
+        """Handle Labs button click."""
+        result = await handle_labs(ctx)
+        await callback_query.message.answer(result, reply_markup=get_back_keyboard())
+        await callback_query.answer()
+
+    @dp.callback_query(lambda c: c.data == "help")
+    async def callback_help(callback_query: types.CallbackQuery) -> None:
+        """Handle Help button click."""
+        result = await handle_help(ctx)
+        await callback_query.message.answer(result, reply_markup=get_back_keyboard())
+        await callback_query.answer()
+
+    @dp.callback_query(lambda c: c.data == "health")
+    async def callback_health(callback_query: types.CallbackQuery) -> None:
+        """Handle Health button click."""
+        result = await handle_health(ctx)
+        await callback_query.message.answer(result, reply_markup=get_back_keyboard())
+        await callback_query.answer()
+
+    @dp.callback_query(lambda c: c.data.startswith("scores_"))
+    async def callback_scores(callback_query: types.CallbackQuery) -> None:
+        """Handle Scores button click."""
+        lab = callback_query.data.replace("scores_", "")
+        result = await handle_scores(ctx, lab)
+        await callback_query.message.answer(result, reply_markup=get_back_keyboard())
+        await callback_query.answer()
+
+    @dp.callback_query(lambda c: c.data.startswith("top5_"))
+    async def callback_top5(callback_query: types.CallbackQuery) -> None:
+        """Handle Top 5 students button click."""
+        lab = callback_query.data.replace("top5_", "")
+        result = await handle_top_learners(ctx, f"{lab} 5")
+        await callback_query.message.answer(result, reply_markup=get_back_keyboard())
+        await callback_query.answer()
+
+    @dp.callback_query(lambda c: c.data.startswith("groups_"))
+    async def callback_groups(callback_query: types.CallbackQuery) -> None:
+        """Handle Groups button click."""
+        lab = callback_query.data.replace("groups_", "")
+        result = await handle_groups(ctx, lab)
+        await callback_query.message.answer(result, reply_markup=get_back_keyboard())
+        await callback_query.answer()
+
+    @dp.callback_query(lambda c: c.data == "back")
+    async def callback_back(callback_query: types.CallbackQuery) -> None:
+        """Handle Back button click."""
+        result = await handle_start(ctx)
+        await callback_query.message.answer(result, reply_markup=get_main_keyboard())
+        await callback_query.answer()
 
     @dp.message()
     async def handle_message(message: Message) -> None:
         """Handle natural language messages via LLM intent routing.
 
-        TODO: Implement LLM-based intent classification.
-        For now, respond with a hint to use commands.
+        The LLM receives the user's message, a list of tools (backend endpoints),
+        and a system prompt. It responds with tool calls. The bot executes them,
+        feeds results back, and the LLM produces the final answer.
         """
-        # TODO: Call LLM to classify intent and extract parameters
-        # For now, just suggest using commands
-        await message.answer(
-            "Я пока учусь понимать естественный язык. 🤔\n\n"
-            "Попробуйте использовать команды:\n"
-            "/start, /help, /health, /labs, /scores"
-        )
+        # Show typing indicator
+        await message.action("typing")
+
+        # Call natural language handler
+        result = await handle_natural_language(ctx, message.text or "")
+        await message.answer(result)
 
     logger.info("Starting bot...")
     await dp.start_polling(bot)

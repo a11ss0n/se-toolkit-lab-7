@@ -249,6 +249,95 @@ async def handle_scores(ctx: HandlerContext, args: str = "") -> str:
         await client.close()
 
 
+async def handle_top_learners(ctx: HandlerContext, args: str = "") -> str:
+    """Handle top learners query.
+
+    Args:
+        ctx: Handler context with configuration
+        args: "lab-XX limit" format (e.g., "lab-04 5")
+
+    Returns:
+        Top learners information text
+    """
+    if not args:
+        return (
+            "Top learners\n\n"
+            "Usage: /top <lab> [limit]\n\n"
+            "Examples:\n"
+            "  /top lab-04\n"
+            "  /top lab-04 5\n\n"
+            "Default limit is 10."
+        )
+
+    parts = args.split()
+    lab_name = parts[0]
+    limit = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 10
+
+    client = ctx.create_lms_client()
+    try:
+        learners, error = await client.get_top_learners(lab_name, limit)
+
+        if error:
+            return error.message
+
+        if not learners:
+            return f"No learners found for {lab_name}."
+
+        lines = [f"Top {len(learners)} learners in {lab_name}:\n"]
+        for i, learner in enumerate(learners, 1):
+            name = learner.get("name", learner.get("learner", "Unknown"))
+            score = learner.get("score", learner.get("avg_score", 0))
+            lines.append(f"{i}. {name}: {score:.1f}%")
+
+        return "\n".join(lines)
+
+    finally:
+        await client.close()
+
+
+async def handle_groups(ctx: HandlerContext, args: str = "") -> str:
+    """Handle groups query.
+
+    Args:
+        ctx: Handler context with configuration
+        args: Lab name (e.g., "lab-03")
+
+    Returns:
+        Groups information text
+    """
+    if not args:
+        return (
+            "Groups\n\n"
+            "Usage: /groups <lab>\n\n"
+            "Examples:\n"
+            "  /groups lab-03\n"
+            "  /groups lab-04"
+        )
+
+    lab_name = args.strip()
+    client = ctx.create_lms_client()
+    try:
+        groups, error = await client.get_groups(lab_name)
+
+        if error:
+            return error.message
+
+        if not groups:
+            return f"No groups found for {lab_name}."
+
+        lines = [f"Groups in {lab_name}:\n"]
+        for group in sorted(groups, key=lambda g: g.get("avg_score", 0), reverse=True):
+            name = group.get("group", group.get("name", "Unknown"))
+            avg_score = group.get("avg_score", group.get("score", 0))
+            count = group.get("count", group.get("students", 0))
+            lines.append(f"- {name}: {avg_score:.1f}% ({count} students)")
+
+        return "\n".join(lines)
+
+    finally:
+        await client.close()
+
+
 # Map command names to handler functions
 COMMAND_HANDLERS = {
     "start": handle_start,
