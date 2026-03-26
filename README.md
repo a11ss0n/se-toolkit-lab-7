@@ -95,3 +95,123 @@ By the end of this lab, you should be able to say:
 ### Optional
 
 1. [Flutter Web Chatbot](./lab/tasks/optional/task-1.md)
+
+## Deploy
+
+### Prerequisites
+
+- Docker and Docker Compose installed on VM
+- `.env.docker.secret` file with required environment variables
+
+### Required environment variables
+
+Create `.env.docker.secret` in the project root with:
+
+```bash
+# Telegram Bot
+BOT_TOKEN=your-bot-token-from-botfather
+
+# LMS Backend
+LMS_API_KEY=your-lms-api-key
+LMS_API_BASE_URL=http://backend:8000
+
+# LLM API
+LLM_API_BASE_URL=http://localhost:42005  # or your LLM proxy URL
+LLM_API_KEY=your-llm-api-key
+LLM_API_MODEL=your-model-name
+
+# Other required vars (from existing .env.docker.secret.example)
+BACKEND_HOST_ADDRESS=127.0.0.1
+BACKEND_HOST_PORT=42002
+BACKEND_CONTAINER_PORT=8000
+BACKEND_NAME=lms-backend
+BACKEND_DEBUG=false
+BACKEND_CONTAINER_ADDRESS=0.0.0.0
+BACKEND_ENABLE_INTERACTIONS=true
+BACKEND_ENABLE_LEARNERS=true
+AUTOCHECKER_API_URL=http://localhost:42001
+AUTOCHECKER_API_LOGIN=admin
+AUTOCHECKER_API_PASSWORD=admin
+CONST_POSTGRESQL_SERVICE_NAME=postgres
+CONST_POSTGRESQL_DEFAULT_PORT=5432
+POSTGRES_DB=lms
+POSTGRES_USER=lms
+POSTGRES_PASSWORD=your-password
+POSTGRES_HOST_ADDRESS=127.0.0.1
+POSTGRES_HOST_PORT=42004
+PGADMIN_EMAIL=admin@example.com
+PGADMIN_PASSWORD=admin
+LMS_API_HOST_ADDRESS=127.0.0.1
+LMS_API_HOST_PORT=42002
+CADDY_CONTAINER_PORT=80
+QWEN_CODE_API_URL=http://localhost:42005
+```
+
+### Deploy commands
+
+```bash
+# SSH to VM
+ssh root@your-vm-ip
+
+# Navigate to project
+cd ~/se-toolkit-lab-7
+
+# Pull latest changes
+git pull origin main
+
+# Stop any running bot processes (if running outside Docker)
+pkill -f "bot.py" 2>/dev/null || true
+
+# Build and start all services
+docker compose --env-file .env.docker.secret up --build -d
+
+# Check status
+docker compose --env-file .env.docker.secret ps
+
+# View bot logs
+docker compose --env-file .env.docker.secret logs bot --tail 50
+
+# View all logs
+docker compose --env-file .env.docker.secret logs --tail 20
+```
+
+### Verify deployment
+
+1. **Check containers are running:**
+   ```bash
+   docker ps | grep se-toolkit
+   ```
+   Should show: backend, postgres, pgadmin, caddy, bot
+
+2. **Check backend health:**
+   ```bash
+   curl -sf http://localhost:42002/items/ | head -c 200
+   ```
+
+3. **Test bot in Telegram:**
+   - `/start` — welcome message
+   - `/health` — backend status
+   - "what labs are available?" — natural language query
+   - "which lab has the lowest pass rate?" — multi-step reasoning
+
+### Troubleshooting
+
+**Bot container keeps restarting:**
+```bash
+docker compose logs bot --tail 50
+```
+Check for missing env vars or import errors.
+
+**LLM queries fail:**
+Ensure `LLM_API_BASE_URL` points to your LLM proxy (not localhost if running in Docker).
+
+**Backend connection fails:**
+Ensure `LMS_API_BASE_URL=http://backend:8000` (Docker service name, not localhost).
+
+### Update deployment
+
+```bash
+cd ~/se-toolkit-lab-7
+git pull origin main
+docker compose --env-file .env.docker.secret up --build -d
+```
